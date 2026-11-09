@@ -4,6 +4,14 @@
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-08
+
+### Fixed
+
+- Mermaid diagrams in Live Preview redraw in the new colours when the IDE theme changes
+- Table handles in Live Preview no longer stay at their old places after the table or the window changes width
+- No deprecated API on IntelliJ IDEA 2026.3: the page's saved state is read through the new `FileEditorProvider.readState` overload
+
 ## [0.1.0] - 2026-11-08
 
 ### Added
@@ -25,5 +33,6 @@
 - English and Simplified Chinese, following the IDE or chosen in the settings; menus, slash commands, table actions, tooltips and the outline switch at once
 - Settings | Tools | Markdown Studio: the editor for Markdown files, the layout new files open in, scroll sync, language; Appearance: reading width, text size, outline, web images; Editing: the formatting toolbar, a link to the keymap
 
-[Unreleased]: https://github.com/Refinex-Space/markdown-studio/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Refinex-Space/markdown-studio/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/Refinex-Space/markdown-studio/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Refinex-Space/markdown-studio/commits/v0.1.0
