@@ -1,11 +1,13 @@
 /**
  * Tooltips are attribute-driven: any element with `data-tooltip` (and optional
- * `data-tooltip-shortcut`) gets one, shown by the single `<TooltipHost/>` after
- * 600ms of hover. Hidden on scroll, key press, pointer down or leave.
+ * `data-tooltip-shortcut`, `data-tooltip-placement`) gets one, shown by the single
+ * `<TooltipHost/>` after 600ms of hover. Hidden on scroll, key press, pointer down or leave.
+ * A plain `title` works too: it is taken over on hover, as an off-screen browser (the IDE's
+ * JCEF) shows no native tooltips.
  */
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { computePosition, flip, offset, shift } from "@floating-ui/react-dom";
+import { computePosition, flip, offset, shift, type Placement } from "@floating-ui/react-dom";
 import styles from "./Tooltip.module.css";
 import { tx } from "@/platform/i18n";
 
@@ -54,8 +56,17 @@ export function TooltipHost() {
     };
 
     const onOver = (e: PointerEvent) => {
-      const el = (e.target as Element | null)?.closest?.<HTMLElement>("[data-tooltip]");
+      const el = (e.target as Element | null)?.closest?.<HTMLElement>("[data-tooltip],[title]");
       if (!el) return;
+      // A native title becomes this tooltip (the latest one, code may have changed it).
+      const title = el.getAttribute("title");
+      if (title !== null) {
+        el.removeAttribute("title");
+        // The title may have been the element's only name (an icon button).
+        if (title && !el.hasAttribute("aria-label") && !el.textContent?.trim()) el.setAttribute("aria-label", title);
+        if (title) el.dataset.tooltip = title;
+        if (!el.dataset.tooltip) return;
+      }
       if (el === anchorRef.current) return;
       clearTimeout(timer);
       if (visible) {
@@ -101,7 +112,7 @@ export function TooltipHost() {
     if (!anchor || !tip) return;
     let cancelled = false;
     void computePosition(anchor, tip, {
-      placement: "bottom",
+      placement: (anchor.dataset.tooltipPlacement as Placement | undefined) ?? "bottom",
       strategy: "fixed",
       middleware: [offset(6), flip({ padding: 6 }), shift({ padding: 6 })],
     }).then(({ x, y }) => {

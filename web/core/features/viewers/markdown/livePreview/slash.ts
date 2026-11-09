@@ -1,14 +1,15 @@
 /**
  * The slash menu: typing `/` (or `、`, the same key in Chinese input methods) at the start of
  * a line or after a space opens a menu of Markdown blocks under the caret; what follows the
- * slash filters it. Arrow keys move, Enter or Tab inserts, Escape closes and keeps the text.
+ * slash filters it. Arrow keys move, Enter or Tab inserts, Escape closes and keeps the text; on
+ * a submenu row (callouts, diagrams) Right or Enter opens it, Left or Escape goes back.
  * The menu itself is React (`SlashMenu`), fed by the store this plugin writes.
  */
 import { Prec } from "@codemirror/state";
 import { closeCompletion } from "@codemirror/autocomplete";
 import { EditorView, keymap, ViewPlugin, type ViewUpdate } from "@codemirror/view";
 import { create } from "zustand";
-import { MAX_QUERY, slashGroups, type SlashCommand } from "./catalog";
+import { isFolder, MAX_QUERY, slashGroups, type SlashCommand, type SlashEntry, type SlashFolder } from "./catalog";
 
 let mounted = false;
 /** The menu mounts on first use into its own body-level host. */
@@ -31,16 +32,35 @@ export interface SlashState {
   from: number;
   query: string;
   active: number;
+  /** The open submenu (the active row's), and its active row. */
+  sub: string | null;
+  subActive: number;
   /** Where to show the menu (the slash's screen box). */
   rect: DOMRect | null;
 }
 
-export const useSlash = create<SlashState>(() => ({ view: null, from: 0, query: "", active: 0, rect: null }));
+export const useSlash = create<SlashState>(() => ({
+  view: null,
+  from: 0,
+  query: "",
+  active: 0,
+  sub: null,
+  subActive: 0,
+  rect: null,
+}));
 
-export const slashItems = (query: string) => slashGroups(query).flatMap((g) => g.items);
+/** The menu's rows, top to bottom: commands and submenu rows. */
+export const slashItems = (query: string): SlashEntry[] => slashGroups(query).flatMap((g) => g.items);
+
+/** The open submenu, if any. */
+export function openFolder(s: SlashState = useSlash.getState()): SlashFolder | null {
+  if (!s.sub) return null;
+  const entry = slashItems(s.query)[s.active];
+  return entry && isFolder(entry) && entry.id === s.sub ? entry : null;
+}
 
 export function closeSlash() {
-  if (useSlash.getState().view) useSlash.setState({ view: null, rect: null, active: 0, query: "" });
+  if (useSlash.getState().view) useSlash.setState({ view: null, rect: null, active: 0, query: "", sub: null, subActive: 0 });
 }
 
 /** Runs `item` for the open menu: the `/query` text is replaced by what it inserts. */
@@ -106,7 +126,9 @@ const slashPlugin = ViewPlugin.fromClass(
       if (query.length > MAX_QUERY || /\s{2}|^\s/.test(query) || (/\s$/.test(query) && !slashItems(query).length))
         return closeSlash();
       if (query !== s.query || from !== s.from)
-        useSlash.setState({ query, from, active: query !== s.query ? 0 : s.active });
+        useSlash.setState(
+          query !== s.query ? { query, from, active: 0, sub: null, subActive: 0 } : { query, from, active: s.active },
+        );
       if (u.geometryChanged || u.viewportChanged || from !== s.from) this.measure(from);
     }
 
@@ -129,21 +151,51 @@ const open = (view: EditorView) => useSlash.getState().view === view;
 
 function move(view: EditorView, d: number): boolean {
   if (!open(view)) return false;
+  const folder = openFolder();
+  if (folder) {
+    const n = folder.items.length;
+    useSlash.setState((s) => ({ subActive: (s.subActive + d + n) % n }));
+    return true;
+  }
   const n = slashItems(useSlash.getState().query).length;
   if (!n) return false;
-  useSlash.setState((s) => ({ active: (s.active + d + n) % n }));
+  useSlash.setState((s) => ({ active: (s.active + d + n) % n, sub: null }));
+  return true;
+}
+
+/** Opens the submenu of the active row, if it is a submenu row. */
+function enter(view: EditorView): boolean {
+  if (!open(view) || openFolder()) return false;
+  const s = useSlash.getState();
+  const entry = slashItems(s.query)[s.active];
+  if (!entry || !isFolder(entry)) return false;
+  useSlash.setState({ sub: entry.id, subActive: 0 });
+  return true;
+}
+
+/** Back from a submenu to its row. */
+function leave(view: EditorView): boolean {
+  if (!open(view) || !openFolder()) return false;
+  useSlash.setState({ sub: null, subActive: 0 });
   return true;
 }
 
 function accept(view: EditorView): boolean {
   if (!open(view)) return false;
   const s = useSlash.getState();
-  const item = slashItems(s.query)[s.active];
-  if (!item) {
+  const folder = openFolder(s);
+  if (folder) {
+    const item = folder.items[s.subActive];
+    if (item) runSlash(item);
+    return true;
+  }
+  const entry = slashItems(s.query)[s.active];
+  if (!entry) {
     closeSlash();
     return false;
   }
-  runSlash(item);
+  if (isFolder(entry)) return enter(view);
+  runSlash(entry);
   return true;
 }
 
@@ -153,13 +205,15 @@ const slashKeys = Prec.highest(
     { key: "ArrowUp", run: (v) => move(v, -1) },
     { key: "Ctrl-n", run: (v) => move(v, 1) },
     { key: "Ctrl-p", run: (v) => move(v, -1) },
+    { key: "ArrowRight", run: enter },
+    { key: "ArrowLeft", run: leave },
     { key: "Enter", run: accept },
     { key: "Tab", run: accept },
     {
       key: "Escape",
       run: (v) => {
         if (!open(v)) return false;
-        closeSlash();
+        if (!leave(v)) closeSlash();
         return true;
       },
     },

@@ -7,6 +7,7 @@
 import { useLayoutEffect, useRef } from "react";
 import clsx from "clsx";
 import { MarkdownEditor } from "@/features/viewers/markdown/MarkdownEditor";
+import { TooltipHost } from "@/ui/Tooltip";
 import { useSession } from "../host/session";
 import "./host.css";
 
@@ -33,6 +34,7 @@ export function App() {
       <MarkdownEditor path={path} tabId="markdown-studio" actionsInTabs>
         <EditorMount />
       </MarkdownEditor>
+      <TooltipHost />
     </div>
   );
 }

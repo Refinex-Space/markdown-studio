@@ -65,10 +65,12 @@ function wanted(state: EditorState): boolean {
   return true;
 }
 
-function title(b: Exclude<Button, { kind: "sep" }>): string {
+/** The button's tooltip (shown by the page's TooltipHost, above the toolbar): its name and shortcut. */
+function tooltip(btn: HTMLElement, b: Exclude<Button, { kind: "sep" }>) {
+  btn.dataset.tooltip = b.title;
+  btn.dataset.tooltipPlacement = "top";
   const keys = getAction(b.action) ? bindingsFor(b.action) : [];
-  const t = tx(b.title);
-  return keys[0] ? `${t}  ${formatBinding(keys[0])}` : t;
+  if (keys[0]) btn.dataset.tooltipShortcut = formatBinding(keys[0]);
 }
 
 function create(view: EditorView): { dom: HTMLElement } {
@@ -86,7 +88,7 @@ function create(view: EditorView): { dom: HTMLElement } {
     btn.type = "button";
     btn.className = "cm-md-toolbar-button";
     btn.innerHTML = iconMarkup(b.icon, 16) ?? "";
-    btn.title = title(b);
+    tooltip(btn, b);
     btn.setAttribute("aria-label", tx(b.title));
     if (b.kind === "block" && current === b.block) btn.setAttribute("aria-pressed", "true");
     btn.addEventListener("mousedown", (e) => e.preventDefault());

@@ -59,3 +59,21 @@
   font-size: var(--fs-small);
   color: var(--fg-faint, var(--fg-muted));
 }
+/* A submenu: its kinds beside their row (callouts, diagrams). */
+.submenu {
+  width: 236px;
+  /* Its first row level with the row it opens from (the list's top padding). */
+  margin-top: -5px;
+}
+.expanded:not(.active) {
+  background: var(--bg-hover);
+}
+.chevron {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  color: var(--fg-muted);
+}
+.active .chevron {
+  color: var(--fg-secondary);
+}

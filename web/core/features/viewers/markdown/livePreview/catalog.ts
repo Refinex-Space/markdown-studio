@@ -1,19 +1,33 @@
 /**
- * The Markdown commands the slash menu offers (and searches): blocks, lists, inserts and
- * diagrams, each with its icon, the Markdown it writes (shown as a hint) and search aliases —
- * English, the Markdown marker, pinyin and its initials, so `/bt` finds 标题 as `/h` does.
+ * The Markdown commands the slash menu offers (and searches): blocks, lists and inserts, each
+ * with its icon, the Markdown it writes (shown as a hint) and search aliases — English, the
+ * Markdown marker, pinyin and its initials, so `/bt` finds 标题 as `/h` does. Kinds of one thing
+ * (the callouts, the Mermaid diagrams) share a submenu, as in the editor's context menu; a search
+ * lists every command directly.
  */
 import type { EditorView } from "@codemirror/view";
 import { tx } from "@/platform/i18n";
 import { insertBlock, setBlock, type BlockKind, type InsertKind } from "./commands";
 
-export type SlashSection = "Basic Blocks" | "Lists" | "Insert" | "Diagrams";
+export type SlashSection = "Basic Blocks" | "Lists" | "Insert";
+
+/** The submenus: one row in the menu for several kinds of one block. */
+export type SlashFolderId = "callout" | "diagram";
+
+const FOLDERS: Readonly<Record<SlashFolderId, { label: string; icon: string }>> = {
+  callout: { label: "Callout", icon: "md-callout" },
+  diagram: { label: "Mermaid Diagram", icon: "md-diagram" },
+};
 
 export interface SlashCommand {
   id: string;
   label: string;
   icon: string;
   section: SlashSection;
+  /** The submenu it is listed in (the default menu); a search shows it with [label]. */
+  folder?: SlashFolderId;
+  /** Its label inside the submenu, where the submenu names the kind ("Tip" under "Callout"). */
+  short?: string;
   /** The Markdown it writes, shown beside the label. */
   hint?: string;
   keywords: readonly string[];
@@ -61,7 +75,8 @@ const diagram = (id: string, label: string, keywords: string[], kind: InsertKind
   id,
   label,
   icon: "md-diagram",
-  section: "Diagrams",
+  section: "Insert",
+  folder: "diagram",
   hint: "mermaid",
   keywords: ["mermaid", "diagram", "chart", "tubiao", "tb", "图表", ...keywords],
   run: insert(kind),
@@ -70,15 +85,17 @@ const diagram = (id: string, label: string, keywords: string[], kind: InsertKind
 const callout = (
   kind: "note" | "tip" | "important" | "warning" | "caution",
   label: string,
+  short: string,
   keywords: string[],
 ): SlashCommand => ({
   id: `callout-${kind}`,
   label,
+  short,
   icon: "md-callout",
   section: "Insert",
+  folder: "callout",
   hint: `[!${kind.toUpperCase()}]`,
   keywords: ["callout", "alert", "admonition", kind, "tishi", "ts", "提示", ...keywords],
-  searchOnly: kind !== "note",
   run: insert(`callout:${kind}`),
 });
 
@@ -174,11 +191,24 @@ export const SLASH_COMMANDS: readonly SlashCommand[] = [
     ],
     run: insert("math"),
   },
-  callout("note", "Callout", ["note", "zhuyi", "zy", "注意"]),
-  callout("tip", "Tip Callout", ["tip", "jiqiao", "jq", "技巧"]),
-  callout("important", "Important Callout", ["important", "zhongyao", "zy", "重要"]),
-  callout("warning", "Warning Callout", ["warning", "jinggao", "jg", "警告"]),
-  callout("caution", "Caution Callout", ["caution", "danger", "weixian", "wx", "危险"]),
+  callout("note", "Callout", "Note", ["note", "zhuyi", "zy", "注意"]),
+  callout("tip", "Tip Callout", "Tip", ["tip", "jiqiao", "jq", "技巧"]),
+  callout("important", "Important Callout", "Important", ["important", "zhongyao", "zy", "重要"]),
+  callout("warning", "Warning Callout", "Warning", ["warning", "jinggao", "jg", "警告"]),
+  callout("caution", "Caution Callout", "Caution", ["caution", "danger", "weixian", "wx", "危险"]),
+  diagram("flowchart", "Flowchart", ["flowchart", "flow", "graph", "liuchengtu", "lct", "流程图"], "mermaid:flowchart"),
+  diagram("sequence", "Sequence Diagram", ["sequence", "shixutu", "sxt", "时序图"], "mermaid:sequence"),
+  diagram("class", "Class Diagram", ["class", "uml", "leitu", "lt", "类图"], "mermaid:class"),
+  diagram("state", "State Diagram", ["state", "zhuangtaitu", "ztt", "状态图"], "mermaid:state"),
+  diagram(
+    "er",
+    "ER Diagram",
+    ["er", "entity", "relationship", "database", "shitiguanxi", "stgx", "实体关系"],
+    "mermaid:er",
+  ),
+  diagram("gantt", "Gantt Chart", ["gantt", "schedule", "gantetu", "gtt", "甘特图"], "mermaid:gantt"),
+  diagram("pie", "Pie Chart", ["pie", "bingtu", "bt", "饼图"], "mermaid:pie"),
+  diagram("mindmap", "Mind Map", ["mindmap", "mind", "siweidaotu", "swdt", "思维导图"], "mermaid:mindmap"),
   {
     id: "hr",
     label: "Divider",
@@ -225,22 +255,9 @@ export const SLASH_COMMANDS: readonly SlashCommand[] = [
     searchOnly: true,
     run: insert("frontMatter"),
   },
-  diagram("flowchart", "Flowchart", ["flowchart", "flow", "graph", "liuchengtu", "lct", "流程图"], "mermaid:flowchart"),
-  diagram("sequence", "Sequence Diagram", ["sequence", "shixutu", "sxt", "时序图"], "mermaid:sequence"),
-  diagram("class", "Class Diagram", ["class", "uml", "leitu", "lt", "类图"], "mermaid:class"),
-  diagram("state", "State Diagram", ["state", "zhuangtaitu", "ztt", "状态图"], "mermaid:state"),
-  diagram(
-    "er",
-    "ER Diagram",
-    ["er", "entity", "relationship", "database", "shitiguanxi", "stgx", "实体关系"],
-    "mermaid:er",
-  ),
-  diagram("gantt", "Gantt Chart", ["gantt", "schedule", "gantetu", "gtt", "甘特图"], "mermaid:gantt"),
-  diagram("pie", "Pie Chart", ["pie", "bingtu", "bt", "饼图"], "mermaid:pie"),
-  diagram("mindmap", "Mind Map", ["mindmap", "mind", "siweidaotu", "swdt", "思维导图"], "mermaid:mindmap"),
 ];
 
-export const SECTION_ORDER: readonly SlashSection[] = ["Basic Blocks", "Lists", "Insert", "Diagrams"];
+export const SECTION_ORDER: readonly SlashSection[] = ["Basic Blocks", "Lists", "Insert"];
 
 /** A query longer than this is prose, not a command search. */
 export const MAX_QUERY = 24;
@@ -264,19 +281,48 @@ function score(c: SlashCommand, q: string): number {
   return best;
 }
 
-export interface SlashGroup {
-  section: SlashSection | null;
+/** A submenu row: its commands open to the side. */
+export interface SlashFolder {
+  id: SlashFolderId;
+  label: string;
+  icon: string;
   items: SlashCommand[];
 }
 
-/** The menu for `raw`: the default sections when empty, else one ranked list. */
+export type SlashEntry = SlashCommand | SlashFolder;
+
+export const isFolder = (e: SlashEntry): e is SlashFolder => "items" in e;
+
+export interface SlashGroup {
+  section: SlashSection | null;
+  items: SlashEntry[];
+}
+
+/** A section of the default menu: its commands, a submenu row where the first of its kinds is. */
+function sectionEntries(section: SlashSection): SlashEntry[] {
+  const entries: SlashEntry[] = [];
+  const folders = new Map<SlashFolderId, SlashFolder>();
+  for (const c of SLASH_COMMANDS) {
+    if (c.section !== section || c.searchOnly) continue;
+    if (!c.folder) {
+      entries.push(c);
+      continue;
+    }
+    let folder = folders.get(c.folder);
+    if (!folder) {
+      folder = { id: c.folder, ...FOLDERS[c.folder], items: [] };
+      folders.set(c.folder, folder);
+      entries.push(folder);
+    }
+    folder.items.push(c);
+  }
+  return entries;
+}
+
+/** The menu for `raw`: the default sections (with submenus) when empty, else one ranked list. */
 export function slashGroups(raw: string): SlashGroup[] {
   const q = raw.toLowerCase().replace(/\s+/g, "");
-  if (!q)
-    return SECTION_ORDER.map((section) => ({
-      section,
-      items: SLASH_COMMANDS.filter((c) => c.section === section && !c.searchOnly),
-    }));
+  if (!q) return SECTION_ORDER.map((section) => ({ section, items: sectionEntries(section) }));
   const items = SLASH_COMMANDS.map((c, i) => ({ c, i, s: score(c, q) }))
     .filter((m) => m.s > 0)
     .sort((a, b) => b.s - a.s || a.i - b.i)

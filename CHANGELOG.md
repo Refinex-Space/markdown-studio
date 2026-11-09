@@ -9,6 +9,8 @@
 - Markdown files open in Markdown Studio: Live Preview, Source, Source and Preview, and Preview layouts, switched from the editor toolbar or Find Action
 - Live Preview: headings, emphasis, links, images (local and web), lists, task lists, tables, code blocks, KaTeX math, Mermaid diagrams, GitHub callouts, footnotes, front matter and character references render in place
 - Slash commands, the selection formatting toolbar, table editing with row and column menus, a code block language picker, the image and diagram viewer
+- The slash menu groups the kinds of a callout and the Mermaid diagrams in submenus (opened with the mouse or the arrow keys); a search lists every command
+- Tooltips with their shortcuts on the formatting toolbar and on the page's buttons (copy code, image viewer, outline)
 - The document outline beside the text, shown or hidden from the editor toolbar
 - A loading skeleton in the document's shape while a Markdown file opens, fading into the text once it is drawn
 - A welcome tab after installation (and from Help | Markdown Studio Welcome): the tour, the layout new files open in, what the plugin does and the keys to start with

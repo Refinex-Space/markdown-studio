@@ -1,9 +1,10 @@
 import { ensureSyntaxTree } from "@codemirror/language";
 import { EditorSelection, EditorState } from "@codemirror/state";
-import { EditorView } from "@codemirror/view";
+import { EditorView, runScopeHandlers } from "@codemirror/view";
 import { afterEach, describe, expect, it } from "vitest";
 import { inlineMathEnd, markdownSupport } from "@/editor/core/cm/markdownLang";
-import { slashGroups } from "./catalog";
+import { isFolder, slashGroups } from "./catalog";
+import { closeSlash, slashItems, slashMenu, useSlash } from "./slash";
 import { codeBlockKeys, fenceShape, languageSuggestions } from "./codeBlocks";
 import { insertBlock, lineShape, setBlock, toggleInline } from "./commands";
 import { blockLayer } from "./blocks";
@@ -155,11 +156,49 @@ describe("editing commands", () => {
 
 describe("slash menu", () => {
   it("lists sections when empty and finds by English, Markdown or pinyin", () => {
-    expect(slashGroups("").map((g) => g.section)).toEqual(["Basic Blocks", "Lists", "Insert", "Diagrams"]);
+    expect(slashGroups("").map((g) => g.section)).toEqual(["Basic Blocks", "Lists", "Insert"]);
     expect(slashGroups("h2")[0]!.items[0]!.id).toBe("h2");
     expect(slashGroups("bg")[0]!.items[0]!.id).toBe("table");
     expect(slashGroups("lct")[0]!.items[0]!.id).toBe("flowchart");
     expect(slashGroups("qqqqq")).toEqual([]);
+  });
+
+  it("groups the kinds of a callout and of a diagram in submenus, and searches every kind", () => {
+    const insert = slashGroups("").find((g) => g.section === "Insert")!.items;
+    const folders = insert.filter(isFolder);
+    expect(folders.map((f) => f.id)).toEqual(["callout", "diagram"]);
+    expect(folders[0]!.items.map((c) => c.short)).toEqual(["Note", "Tip", "Important", "Warning", "Caution"]);
+    expect(folders[1]!.items).toHaveLength(8);
+    // A submenu row sits where its first kind was: after Math Block, before Divider.
+    expect(insert.map((e) => e.id)).toEqual(["table", "code", "math", "callout", "diagram", "hr", "image", "link", "footnote"]);
+    expect(slashGroups("tip")[0]!.items[0]!.id).toBe("callout-tip");
+    expect(slashGroups("lct")[0]!.items.some(isFolder)).toBe(false);
+  });
+
+  it("opens a submenu with Right or Enter, moves in it, and goes back with Left or Escape", () => {
+    const view = new EditorView({ state: EditorState.create({ doc: "", extensions: [markdownSupport(), slashMenu] }), parent: document.body });
+    const key = (k: string) => runScopeHandlers(view, new KeyboardEvent("keydown", { key: k }), "editor");
+    try {
+      view.dispatch({ changes: { from: 0, insert: "/" }, selection: { anchor: 1 }, userEvent: "input.type" });
+      expect(useSlash.getState().view).toBe(view);
+      const rows = slashItems("");
+      useSlash.setState({ active: rows.findIndex((e) => e.id === "callout") });
+      expect(key("ArrowRight")).toBe(true);
+      expect(useSlash.getState().sub).toBe("callout");
+      key("ArrowDown");
+      expect(useSlash.getState().subActive).toBe(1);
+      expect(key("Escape")).toBe(true);
+      expect(useSlash.getState()).toMatchObject({ view, sub: null });
+      key("Enter");
+      expect(useSlash.getState().sub).toBe("callout");
+      key("ArrowDown");
+      key("Enter");
+      expect(view.state.doc.toString()).toContain("[!TIP]");
+      expect(useSlash.getState().view).toBe(null);
+    } finally {
+      closeSlash();
+      view.destroy();
+    }
   });
 });
 
