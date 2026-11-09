@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-08
+
 ### Added
 
 - Markdown files open in Markdown Studio: Live Preview, Source, Source and Preview, and Preview layouts, switched from the editor toolbar or Find Action
@@ -22,3 +24,6 @@
 - The IDE's look: editor colour scheme (code blocks highlight in it), interface theme, fonts and ligatures, IDE zoom, caret blinking and bracket pairing
 - English and Simplified Chinese, following the IDE or chosen in the settings; menus, slash commands, table actions, tooltips and the outline switch at once
 - Settings | Tools | Markdown Studio: the editor for Markdown files, the layout new files open in, scroll sync, language; Appearance: reading width, text size, outline, web images; Editing: the formatting toolbar, a link to the keymap
+
+[Unreleased]: https://github.com/Refinex-Space/markdown-studio/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/Refinex-Space/markdown-studio/commits/v0.1.0
