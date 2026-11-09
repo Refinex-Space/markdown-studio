@@ -1,0 +1,143 @@
+<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin>
+    <id>com.refinex.markdownstudio</id>
+    <name>Markdown Studio</name>
+    <vendor url="https://github.com/Refinex-Space">Refinex</vendor>
+
+    <description><![CDATA[
+        <p>A complete Markdown workspace for your JetBrains IDE: write in the rendered document, preview beside the source, and edit with the IDE's own keys.</p>
+        <ul>
+          <li><b>Live Preview</b> (WYSIWYG): the document renders as you type; the Markdown shows only where the caret is.</li>
+          <li><b>Slash commands</b>: type <code>/</code> for headings, lists, tables, code, math, callouts and Mermaid diagrams.</li>
+          <li><b>Tables</b> edited cell by cell, with row, column and alignment menus.</li>
+          <li><b>Code blocks</b> highlighted in your editor colour scheme, <b>math</b> typeset with KaTeX, <b>Mermaid</b> diagrams drawn in place, GitHub <b>callouts</b>, footnotes, task lists and front matter.</li>
+          <li>A floating <b>formatting toolbar</b> over selections, and Format / Paragraph / Insert in the editor menu.</li>
+          <li>The document <b>outline</b> beside the text.</li>
+          <li><b>Source</b>, <b>Source and Preview</b> and <b>Preview</b> layouts; the source is the IDE's own editor, with every IDE feature.</li>
+          <li>Your theme, colour scheme, fonts, zoom, keymap and language; English and Simplified Chinese.</li>
+        </ul>
+        <p>Edits are IDE commands on the file's document, so undo, local history and version control work as with any file.</p>
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.jcef</depends>
+
+    <resource-bundle>messages.MarkdownStudioBundle</resource-bundle>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <fileEditorProvider id="markdown-studio-editor"
+                            implementation="com.refinex.markdownstudio.editor.MarkdownStudioEditorProvider"
+                            order="first"/>
+        <applicationConfigurable parentId="tools"
+                                 id="com.refinex.markdownstudio.settings"
+                                 instance="com.refinex.markdownstudio.settings.MarkdownStudioConfigurable"
+                                 key="settings.displayName"/>
+        <applicationConfigurable parentId="com.refinex.markdownstudio.settings"
+                                 id="com.refinex.markdownstudio.settings.appearance"
+                                 instance="com.refinex.markdownstudio.settings.MarkdownStudioAppearanceConfigurable"
+                                 key="settings.appearance.displayName"/>
+        <applicationConfigurable parentId="com.refinex.markdownstudio.settings"
+                                 id="com.refinex.markdownstudio.settings.editing"
+                                 instance="com.refinex.markdownstudio.settings.MarkdownStudioEditingConfigurable"
+                                 key="settings.editing.displayName"/>
+        <actionPromoter implementation="com.refinex.markdownstudio.actions.MarkdownStudioActionPromoter"/>
+
+        <!-- The welcome tab: shown once after installation, and from Help. -->
+        <fileType name="MarkdownStudioWelcome" implementationClass="com.refinex.markdownstudio.welcome.WelcomeFileType"
+                  fieldName="INSTANCE"/>
+        <fileEditorProvider id="markdown-studio-welcome"
+                            implementation="com.refinex.markdownstudio.welcome.WelcomeEditorProvider"/>
+        <postStartupActivity implementation="com.refinex.markdownstudio.welcome.WelcomeStartup"/>
+    </extensions>
+
+    <applicationListeners>
+        <listener class="com.refinex.markdownstudio.welcome.WelcomeInstallListener"
+                  topic="com.intellij.ide.plugins.DynamicPluginListener"/>
+    </applicationListeners>
+
+    <actions resource-bundle="messages.MarkdownStudioBundle">
+        <action id="MarkdownStudio.Welcome" class="com.refinex.markdownstudio.welcome.ShowWelcomeAction"
+                icon="/icons/markdownStudio.svg">
+            <add-to-group group-id="HelpMenu" anchor="after" relative-to-action="WhatsNewAction"/>
+        </action>
+        <group id="MarkdownStudio.Layouts">
+            <action id="MarkdownStudio.Layout.Live" class="com.refinex.markdownstudio.editor.LiveLayoutAction"
+                    icon="/icons/markdown/livePreview.svg"/>
+            <action id="MarkdownStudio.Layout.Source" class="com.refinex.markdownstudio.editor.SourceLayoutAction"
+                    icon="AllIcons.General.LayoutEditorOnly"/>
+            <action id="MarkdownStudio.Layout.Split" class="com.refinex.markdownstudio.editor.SplitLayoutAction"
+                    icon="AllIcons.General.LayoutEditorPreview"/>
+            <action id="MarkdownStudio.Layout.Preview" class="com.refinex.markdownstudio.editor.PreviewLayoutAction"
+                    icon="AllIcons.General.LayoutPreviewOnly"/>
+            <separator/>
+            <action id="MarkdownStudio.ToggleOutline" class="com.refinex.markdownstudio.editor.ToggleOutlineAction"
+                    icon="/icons/markdown/outline.svg"/>
+        </group>
+
+        <group id="MarkdownStudio.Format" popup="true" icon="/icons/markdown/bold.svg">
+            <action id="MarkdownStudio.Bold" class="com.refinex.markdownstudio.actions.MarkdownCommandAction" icon="/icons/markdown/bold.svg">
+                <keyboard-shortcut keymap="$default" first-keystroke="control B"/>
+                <keyboard-shortcut keymap="Mac OS X" first-keystroke="meta B" replace-all="true"/>
+                <keyboard-shortcut keymap="Mac OS X 10.5+" first-keystroke="meta B" replace-all="true"/>
+            </action>
+            <action id="MarkdownStudio.Italic" class="com.refinex.markdownstudio.actions.MarkdownCommandAction" icon="/icons/markdown/italic.svg">
+                <keyboard-shortcut keymap="$default" first-keystroke="control I"/>
+                <keyboard-shortcut keymap="Mac OS X" first-keystroke="meta I" replace-all="true"/>
+                <keyboard-shortcut keymap="Mac OS X 10.5+" first-keystroke="meta I" replace-all="true"/>
+            </action>
+            <action id="MarkdownStudio.Strikethrough" class="com.refinex.markdownstudio.actions.MarkdownCommandAction" icon="/icons/markdown/strikethrough.svg">
+                <keyboard-shortcut keymap="$default" first-keystroke="control shift X"/>
+                <keyboard-shortcut keymap="Mac OS X" first-keystroke="meta shift X" replace-all="true"/>
+                <keyboard-shortcut keymap="Mac OS X 10.5+" first-keystroke="meta shift X" replace-all="true"/>
+            </action>
+            <action id="MarkdownStudio.InlineCode" class="com.refinex.markdownstudio.actions.MarkdownCommandAction" icon="/icons/markdown/inlineCode.svg"/>
+            <action id="MarkdownStudio.InlineMath" class="com.refinex.markdownstudio.actions.MarkdownCommandAction" icon="/icons/markdown/math.svg"/>
+            <action id="MarkdownStudio.Link" class="com.refinex.markdownstudio.actions.MarkdownCommandAction" icon="/icons/markdown/link.svg"/>
+        </group>
+        <group id="MarkdownStudio.ParagraphGroup" popup="true" icon="/icons/markdown/text.svg">
+            <action id="MarkdownStudio.Paragraph" class="com.refinex.markdownstudio.actions.MarkdownCommandAction" icon="/icons/markdown/text.svg"/>
+            <action id="MarkdownStudio.Heading1" class="com.refinex.markdownstudio.actions.MarkdownCommandAction" icon="/icons/markdown/heading1.svg"/>
+            <action id="MarkdownStudio.Heading2" class="com.refinex.markdownstudio.actions.MarkdownCommandAction" icon="/icons/markdown/heading2.svg"/>
+            <action id="MarkdownStudio.Heading3" class="com.refinex.markdownstudio.actions.MarkdownCommandAction" icon="/icons/markdown/heading3.svg"/>
+            <action id="MarkdownStudio.Heading4" class="com.refinex.markdownstudio.actions.MarkdownCommandAction" icon="/icons/markdown/heading4.svg"/>
+            <action id="MarkdownStudio.Heading5" class="com.refinex.markdownstudio.actions.MarkdownCommandAction" icon="/icons/markdown/heading5.svg"/>
+            <action id="MarkdownStudio.Heading6" class="com.refinex.markdownstudio.actions.MarkdownCommandAction" icon="/icons/markdown/heading6.svg"/>
+            <action id="MarkdownStudio.BulletList" class="com.refinex.markdownstudio.actions.MarkdownCommandAction" icon="/icons/markdown/bulletList.svg"/>
+            <action id="MarkdownStudio.NumberedList" class="com.refinex.markdownstudio.actions.MarkdownCommandAction" icon="/icons/markdown/numberedList.svg"/>
+            <action id="MarkdownStudio.TaskList" class="com.refinex.markdownstudio.actions.MarkdownCommandAction" icon="/icons/markdown/taskList.svg"/>
+            <action id="MarkdownStudio.Quote" class="com.refinex.markdownstudio.actions.MarkdownCommandAction" icon="/icons/markdown/quote.svg"/>
+        </group>
+        <group id="MarkdownStudio.Insert" popup="true" icon="/icons/markdown/table.svg">
+            <action id="MarkdownStudio.InsertTable" class="com.refinex.markdownstudio.actions.MarkdownCommandAction" icon="/icons/markdown/table.svg"/>
+            <action id="MarkdownStudio.InsertCodeBlock" class="com.refinex.markdownstudio.actions.MarkdownCommandAction" icon="/icons/markdown/codeBlock.svg"/>
+            <action id="MarkdownStudio.InsertMathBlock" class="com.refinex.markdownstudio.actions.MarkdownCommandAction" icon="/icons/markdown/math.svg"/>
+            <action id="MarkdownStudio.InsertDivider" class="com.refinex.markdownstudio.actions.MarkdownCommandAction" icon="/icons/markdown/divider.svg"/>
+            <action id="MarkdownStudio.InsertImage" class="com.refinex.markdownstudio.actions.MarkdownCommandAction" icon="/icons/markdown/image.svg"/>
+            <action id="MarkdownStudio.InsertFootnote" class="com.refinex.markdownstudio.actions.MarkdownCommandAction" icon="/icons/markdown/footnote.svg"/>
+            <action id="MarkdownStudio.InsertFrontMatter" class="com.refinex.markdownstudio.actions.MarkdownCommandAction" icon="/icons/markdown/frontMatter.svg"/>
+            <action id="MarkdownStudio.InsertCallout" class="com.refinex.markdownstudio.actions.MarkdownCommandAction" icon="/icons/markdown/callout.svg"/>
+            <action id="MarkdownStudio.InsertDiagram" class="com.refinex.markdownstudio.actions.MarkdownCommandAction" icon="/icons/markdown/diagram.svg"/>
+        </group>
+
+        <!-- The IDE's editor actions in Live Preview, on the IDE actions' own shortcuts. -->
+        <group id="MarkdownStudio.PageEditing">
+            <action id="MarkdownStudio.Page.Duplicate" class="com.refinex.markdownstudio.actions.PageEditorAction" use-shortcut-of="EditorDuplicate"/>
+            <action id="MarkdownStudio.Page.DeleteLine" class="com.refinex.markdownstudio.actions.PageEditorAction" use-shortcut-of="EditorDeleteLine"/>
+            <action id="MarkdownStudio.Page.MoveLineUp" class="com.refinex.markdownstudio.actions.PageEditorAction" use-shortcut-of="MoveLineUp"/>
+            <action id="MarkdownStudio.Page.MoveLineDown" class="com.refinex.markdownstudio.actions.PageEditorAction" use-shortcut-of="MoveLineDown"/>
+            <action id="MarkdownStudio.Page.MoveStatementUp" class="com.refinex.markdownstudio.actions.PageEditorAction" use-shortcut-of="MoveStatementUp"/>
+            <action id="MarkdownStudio.Page.MoveStatementDown" class="com.refinex.markdownstudio.actions.PageEditorAction" use-shortcut-of="MoveStatementDown"/>
+            <action id="MarkdownStudio.Page.ExtendSelection" class="com.refinex.markdownstudio.actions.PageEditorAction" use-shortcut-of="EditorSelectWord"/>
+            <action id="MarkdownStudio.Page.ShrinkSelection" class="com.refinex.markdownstudio.actions.PageEditorAction" use-shortcut-of="EditorUnSelectWord"/>
+            <action id="MarkdownStudio.Page.JoinLines" class="com.refinex.markdownstudio.actions.PageEditorAction" use-shortcut-of="EditorJoinLines"/>
+            <action id="MarkdownStudio.Page.StartNewLine" class="com.refinex.markdownstudio.actions.PageEditorAction" use-shortcut-of="EditorStartNewLine"/>
+            <action id="MarkdownStudio.Page.StartNewLineBefore" class="com.refinex.markdownstudio.actions.PageEditorAction" use-shortcut-of="EditorStartNewLineBefore"/>
+            <action id="MarkdownStudio.Page.SplitLine" class="com.refinex.markdownstudio.actions.PageEditorAction" use-shortcut-of="EditorSplitLine"/>
+            <action id="MarkdownStudio.Page.ToggleCase" class="com.refinex.markdownstudio.actions.PageEditorAction" use-shortcut-of="EditorToggleCase"/>
+            <action id="MarkdownStudio.Page.CommentLine" class="com.refinex.markdownstudio.actions.PageEditorAction" use-shortcut-of="CommentByLineComment"/>
+            <action id="MarkdownStudio.Page.Find" class="com.refinex.markdownstudio.actions.PageEditorAction" use-shortcut-of="Find"/>
+            <action id="MarkdownStudio.Page.Replace" class="com.refinex.markdownstudio.actions.PageEditorAction" use-shortcut-of="Replace"/>
+            <action id="MarkdownStudio.Page.SelectAll" class="com.refinex.markdownstudio.actions.PageEditorAction" use-shortcut-of="$SelectAll"/>
+        </group>
+    </actions>
+</idea-plugin>
