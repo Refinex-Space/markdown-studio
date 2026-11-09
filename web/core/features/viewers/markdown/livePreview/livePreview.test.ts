@@ -283,6 +283,18 @@ describe("table cells", () => {
     cell.dispatchEvent(new FocusEvent(type, { bubbles: true }));
   const frame = () => new Promise((r) => requestAnimationFrame(r));
 
+  it("forgets the handles' measured places when the table changes shape", () => {
+    const { view } = table();
+    const addRow = () => view.dom.querySelector<HTMLElement>(".cm-md-table-add-row")!;
+    // Measured on a hover while the table was wide.
+    addRow().style.width = "1104px";
+    const doc = "| Name | Starter | Notes |\n|---|---|---|\n| tools | `spring-ai` | x |";
+    view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: doc } });
+    ensureSyntaxTree(view.state, doc.length, 5000);
+    expect(view.dom.querySelectorAll(".cm-md-table th")).toHaveLength(3);
+    expect(addRow().getAttribute("style")).toBeNull();
+  });
+
   it("shows a cell's source while editing and renders it again on leaving", () => {
     const { cell } = table();
     focus(cell, "focusin");

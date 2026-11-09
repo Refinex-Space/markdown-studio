@@ -8,7 +8,7 @@ import DOMPurify from "dompurify";
 import { iconMarkup } from "@/ui/icons";
 import { tx } from "@/platform/i18n";
 import { renderMathSync, renderMath } from "../math";
-import { cachedMermaid, renderMermaid, type MermaidResult } from "../mermaid";
+import { cachedMermaid, renderMermaid, subscribeTheme, themeKey, type MermaidResult } from "../mermaid";
 import { openMediaViewer } from "../media/mediaViewer";
 import { imageSource } from "./assets";
 
@@ -224,6 +224,8 @@ function showDiagram(dom: HTMLElement, result: MermaidResult, view: EditorView) 
   view.requestMeasure();
 }
 
+const themeWatchers = new WeakMap<HTMLElement, () => void>();
+
 export class MermaidWidget extends WidgetType {
   constructor(
     readonly source: string,
@@ -243,14 +245,25 @@ export class MermaidWidget extends WidgetType {
         if (svg) openMediaViewer({ kind: "svg", svg: svg.outerHTML, name: "Mermaid" });
       }),
     );
-    const cached = cachedMermaid(this.source);
-    if (cached) showDiagram(dom, cached, view);
-    else {
-      dom.dataset.state = "pending";
-      void renderMermaid(this.source).then((r) => dom.isConnected !== false && showDiagram(dom, r, view));
-    }
+    // The SVG carries the theme's colours, so a theme change redraws it in place; the old
+    // drawing stays up until the new one is ready.
+    const draw = () => {
+      const cached = cachedMermaid(this.source);
+      if (cached) return showDiagram(dom, cached, view);
+      if (!dom.dataset.state) dom.dataset.state = "pending";
+      const theme = themeKey();
+      void renderMermaid(this.source).then(
+        (r) => dom.isConnected !== false && theme === themeKey() && showDiagram(dom, r, view),
+      );
+    };
+    draw();
+    themeWatchers.set(dom, subscribeTheme(draw));
     if (this.caret >= 0) revealOnClick(dom, view, () => view.posAtDOM(dom) + this.caret);
     return dom;
+  }
+  destroy(dom: HTMLElement) {
+    themeWatchers.get(dom)?.();
+    themeWatchers.delete(dom);
   }
   ignoreEvent(e: Event) {
     return fromOverlay(e) || e.type === "mousedown";

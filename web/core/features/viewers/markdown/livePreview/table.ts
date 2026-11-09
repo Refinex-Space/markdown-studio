@@ -74,6 +74,9 @@ class TableController {
   private readonly colHandle: HTMLButtonElement;
   private readonly addRow: HTMLButtonElement;
   private readonly addCol: HTMLButtonElement;
+  /** Width changes (the window, the outline) leave the handles' measured places stale. */
+  private readonly resize: ResizeObserver | null;
+  private width = 0;
 
   constructor(
     private readonly view: EditorView,
@@ -93,6 +96,27 @@ class TableController {
     this.render();
     this.listen();
     controllers.set(this.dom, this);
+    this.resize =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(([entry]) => {
+            const width = Math.round(entry?.contentRect.width ?? 0);
+            if (width === this.width) return;
+            this.width = width;
+            this.clearHandles();
+          });
+    this.resize?.observe(this.dom);
+  }
+
+  dispose() {
+    this.resize?.disconnect();
+  }
+
+  /** Forgets the handles' places (measured for the table as it was); the next hover measures again. */
+  private clearHandles() {
+    this.hover = null;
+    this.dom.dataset.hover = "";
+    for (const h of [this.rowHandle, this.colHandle, this.addRow, this.addCol]) h.removeAttribute("style");
   }
 
   private handle(cls: string, label: string, run: () => void): HTMLButtonElement {
@@ -124,8 +148,7 @@ class TableController {
     scroll.append(table);
     this.dom.replaceChildren(scroll, this.rowHandle, this.colHandle, this.addRow, this.addCol);
     this.table = table;
-    this.hover = null;
-    this.dom.dataset.hover = "";
+    this.clearHandles();
     if (focus) this.focusCell(focus.row, focus.col, "end");
   }
 
@@ -660,6 +683,9 @@ export class TableWidget extends WidgetType {
   }
   ignoreEvent() {
     return true;
+  }
+  destroy(dom: HTMLElement) {
+    controllers.get(dom)?.dispose();
   }
   get estimatedHeight() {
     return (this.source.split("\n").length - 1) * 34;

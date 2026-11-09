@@ -27,7 +27,12 @@ class MarkdownPageEditorProvider : FileEditorProvider, DumbAware {
 
     override fun getPolicy(): FileEditorPolicy = FileEditorPolicy.PLACE_AFTER_DEFAULT_EDITOR
 
-    override fun readState(sourceElement: Element, project: Project, file: VirtualFile): FileEditorState =
+    /**
+     * Overrides `FileEditorProvider.readState(Element, Project, Lazy<VirtualFile>)`, which 2026.3 added in place of
+     * the deprecated `VirtualFile` overload. Built against 2026.2, where the platform has no such method, so it is
+     * declared without `override`; it needs one once the build targets 2026.3. 2026.2 restores the default layout.
+     */
+    fun readState(sourceElement: Element, project: Project, file: Lazy<VirtualFile>): FileEditorState =
         MarkdownPageEditor.State(sourceElement.getAttributeValue(LIVE) != "false")
 
     override fun writeState(state: FileEditorState, project: Project, targetElement: Element) {
