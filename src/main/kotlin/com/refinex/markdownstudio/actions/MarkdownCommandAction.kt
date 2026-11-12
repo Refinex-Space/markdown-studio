@@ -12,6 +12,7 @@ import com.intellij.openapi.keymap.KeymapUtil
 import com.intellij.openapi.project.DumbAwareAction
 import com.refinex.markdownstudio.editor.EditorLayout
 import com.refinex.markdownstudio.editor.MarkdownStudioEditor
+import javax.swing.SwingUtilities
 
 /**
  * A Markdown command of the page's Live Preview (Bold, Heading 1, Insert Table…) as an IDE action,
@@ -50,6 +51,22 @@ class MarkdownCommandAction : DumbAwareAction() {
             (context.getData(PlatformCoreDataKeys.FILE_EDITOR) as? MarkdownStudioEditor)
                 ?.takeIf { it.editorLayout == EditorLayout.LIVE }
 
+        /**
+         * The editor in context while its page shows the rendered preview to the keyboard: the
+         * Preview layout, or Split with the focus in the preview beside the IDE editor.
+         */
+        fun previewEditor(context: DataContext): MarkdownStudioEditor? {
+            val editor = context.getData(PlatformCoreDataKeys.FILE_EDITOR) as? MarkdownStudioEditor ?: return null
+            return when (editor.editorLayout) {
+                EditorLayout.PREVIEW -> editor
+                EditorLayout.SPLIT -> editor.takeIf {
+                    val focused = context.getData(PlatformCoreDataKeys.CONTEXT_COMPONENT)
+                    focused != null && SwingUtilities.isDescendingFrom(focused, it.web.component)
+                }
+                else -> null
+            }
+        }
+
         /** Every command's first keyboard shortcut in the active keymap, by page command id (for the page's tooltips). */
         fun shortcuts(): Map<String, String> {
             val manager = ActionManager.getInstance()
@@ -71,19 +88,25 @@ class PageEditorAction : DumbAwareAction() {
     override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
 
     override fun update(e: AnActionEvent) {
-        val live = MarkdownCommandAction.liveEditor(e.dataContext) != null
-        e.presentation.isEnabledAndVisible = live
-        if (live) localizePresentation(e)
+        val enabled = target(e.dataContext) != null
+        e.presentation.isEnabledAndVisible = enabled
+        if (enabled) localizePresentation(e)
     }
 
     override fun actionPerformed(e: AnActionEvent) {
-        val editor = MarkdownCommandAction.liveEditor(e.dataContext) ?: return
+        val editor = target(e.dataContext) ?: return
         val id = ActionManager.getInstance().getId(this) ?: return
         editor.web.page.runAction(pageActionId(id))
     }
 
+    /** Live Preview's editor; for Find, also the page's preview (it searches the rendered text). */
+    private fun target(context: DataContext): MarkdownStudioEditor? =
+        MarkdownCommandAction.liveEditor(context)
+            ?: MarkdownCommandAction.previewEditor(context)?.takeIf { ActionManager.getInstance().getId(this) == FIND }
+
     companion object {
         const val PREFIX = "MarkdownStudio.Page."
+        const val FIND = "MarkdownStudio.Page.Find"
 
         /** `MarkdownStudio.Page.MoveLineUp` → `editor.moveLineUp`. */
         fun pageActionId(actionId: String): String =
@@ -95,12 +118,22 @@ class PageEditorAction : DumbAwareAction() {
  * While Live Preview edits, its actions win the shortcuts they share with others: ⌘B is Bold
  * there, not Go to Declaration; ⌘D duplicates the line rather than comparing files. Undo and Redo
  * come before the browser's own (JCEF binds them to the page on macOS): edits are IDE commands.
+ * Over the preview, ⌘F opens the page's find bar rather than the hidden IDE editor's.
  */
 class MarkdownStudioActionPromoter : ActionPromoter {
-    override fun promote(actions: List<AnAction>, context: DataContext): List<AnAction> =
-        if (MarkdownCommandAction.liveEditor(context) == null) emptyList() else livePreviewFirst(actions)
+    override fun promote(actions: List<AnAction>, context: DataContext): List<AnAction> = when {
+        MarkdownCommandAction.liveEditor(context) != null -> livePreviewFirst(actions)
+        MarkdownCommandAction.previewEditor(context) != null -> previewFirst(actions)
+        else -> emptyList()
+    }
 
     companion object {
+        /** The action that wins its shortcut over the page's preview: Find searches the preview. */
+        fun previewFirst(actions: List<AnAction>): List<AnAction> {
+            val find = ActionManager.getInstance().getAction(PageEditorAction.FIND)
+            return actions.filter { it === find }
+        }
+
         /** The actions that win their shortcut while Live Preview edits, in the order given. */
         fun livePreviewFirst(actions: List<AnAction>): List<AnAction> {
             val manager = ActionManager.getInstance()

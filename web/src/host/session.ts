@@ -11,6 +11,7 @@ import { useMarkdownModes } from "@/features/viewers/markdown/modes";
 import { create } from "zustand";
 import { createEditor, type PageEditor } from "../editor/createEditor";
 import { receive } from "../editor/documentSync";
+import { openPreviewFind } from "../editor/previewFind";
 import { onIdeMessage, post } from "./bridge";
 import { editorHost } from "./editorHost";
 import type { IdeMessage, PageMode } from "./protocol";
@@ -130,6 +131,8 @@ export function startSession(): () => void {
         view.focus();
         break;
       case "action":
+        // Find in the Preview and Split layouts searches the preview, not the hidden editor.
+        if (m.id === "editor.find" && useSession.getState().mode !== "live" && openPreviewFind()) break;
         view.focus();
         void executeAction(m.id, m.arg);
         break;

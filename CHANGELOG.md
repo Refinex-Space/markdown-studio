@@ -4,6 +4,12 @@
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-11-11
+
+### Added
+
+- Find in the Preview layout, and in Split with the preview focused: ⌘F / Ctrl+F opens Live Preview's find bar over the rendered document (match case, words, regex, count, previous / next); Escape leaves the current match selected
+
 ## [0.1.1] - 2026-11-08
 
 ### Fixed
@@ -33,6 +39,7 @@
 - English and Simplified Chinese, following the IDE or chosen in the settings; menus, slash commands, table actions, tooltips and the outline switch at once
 - Settings | Tools | Markdown Studio: the editor for Markdown files, the layout new files open in, scroll sync, language; Appearance: reading width, text size, outline, web images; Editing: the formatting toolbar, a link to the keymap
 
-[Unreleased]: https://github.com/Refinex-Space/markdown-studio/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/Refinex-Space/markdown-studio/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/Refinex-Space/markdown-studio/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/Refinex-Space/markdown-studio/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Refinex-Space/markdown-studio/commits/v0.1.0

@@ -9,6 +9,7 @@ import clsx from "clsx";
 import { MarkdownEditor } from "@/features/viewers/markdown/MarkdownEditor";
 import { TooltipHost } from "@/ui/Tooltip";
 import { useSession } from "../host/session";
+import { PreviewFind } from "./PreviewFind";
 import "./host.css";
 
 function EditorMount() {
@@ -31,7 +32,7 @@ export function App() {
   if (!path) return null;
   return (
     <div className={clsx("host", `host-mode-${mode}`)}>
-      <MarkdownEditor path={path} tabId="markdown-studio" actionsInTabs>
+      <MarkdownEditor path={path} tabId="markdown-studio" previewBar={<PreviewFind />} actionsInTabs>
         <EditorMount />
       </MarkdownEditor>
       <TooltipHost />

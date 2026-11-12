@@ -78,6 +78,29 @@
   font-size: var(--fs-ui);
   color: var(--fg);
 }
+@media (prefers-reduced-motion: no-preference) {
+  .studio-find {
+    animation: studio-find-in var(--dur, 140ms) var(--ease, ease-out);
+  }
+}
+@keyframes studio-find-in {
+  from {
+    opacity: 0;
+  }
+}
+/* Over the preview (Preview and Split layouts), the bar sits where Live Preview's does. */
+.host-preview-find {
+  flex: none;
+}
+.host-preview-find > .studio-find {
+  border-bottom: 1px solid var(--border);
+}
+::highlight(studio-preview-find) {
+  background-color: var(--bg-search-match, color-mix(in srgb, var(--warning) 30%, transparent));
+}
+::highlight(studio-preview-find-current) {
+  background-color: var(--bg-search-match-current, color-mix(in srgb, var(--warning) 48%, transparent));
+}
 .studio-find-row {
   display: flex;
   align-items: center;

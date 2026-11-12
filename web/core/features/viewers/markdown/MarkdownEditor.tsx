@@ -57,11 +57,14 @@ export function MarkdownEditor({
   path,
   tabId,
   children,
+  previewBar,
   actionsInTabs = false,
 }: {
   path: string;
   tabId: string;
   children: ReactNode;
+  /** Shown above the preview while there is one (the host's find bar). */
+  previewBar?: ReactNode;
   actionsInTabs?: boolean;
 }) {
   const mode = useMarkdownModes((s) => modeOf(s, path));
@@ -71,7 +74,12 @@ export function MarkdownEditor({
     <div ref={ref} className={clsx(styles.split, styles[`mode-${mode}`])}>
       <div ref={main} className={styles.main}>
         <div className={styles.editor}>{children}</div>
-        {(mode === "split" || mode === "preview") && <MarkdownPreview path={path} sync={mode === "split"} />}
+        {(mode === "split" || mode === "preview") && (
+          <div className={styles.previewPane}>
+            {previewBar}
+            <MarkdownPreview path={path} sync={mode === "split"} />
+          </div>
+        )}
         <BackToTop path={path} mode={mode} rootRef={main} />
       </div>
       <MarkdownOutline path={path} mode={mode} rootRef={ref} />

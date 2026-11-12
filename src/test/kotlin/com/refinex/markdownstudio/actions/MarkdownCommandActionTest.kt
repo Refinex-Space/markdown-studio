@@ -43,6 +43,17 @@ class MarkdownCommandActionTest : BasePlatformTestCase() {
         assertEquals(listOf(selectAll), MarkdownStudioActionPromoter.livePreviewFirst(listOf(browserUndo, ideSelectAll, selectAll)))
     }
 
+    /** Over the preview only Find is the page's: it searches the rendered text, nothing else applies. */
+    fun testPreviewWinsFindOnly() {
+        val manager = ActionManager.getInstance()
+        val ideFind = manager.getAction(IdeActions.ACTION_FIND)
+        val find = manager.getAction(PageEditorAction.FIND)
+        val duplicate = manager.getAction("MarkdownStudio.Page.Duplicate")
+        assertTrue(find is PageEditorAction)
+        assertEquals(manager.getAction(IdeActions.ACTION_FIND).shortcutSet.shortcuts.toList(), find.shortcutSet.shortcuts.toList())
+        assertEquals(listOf(find), MarkdownStudioActionPromoter.previewFirst(listOf(ideFind, duplicate, find)))
+    }
+
     fun testEveryCommandIsRegisteredWithTextAndIcon() {
         val manager = ActionManager.getInstance()
         val commands = manager.getActionIdList(MarkdownCommandAction.PREFIX).filter { manager.getAction(it) is MarkdownCommandAction }
